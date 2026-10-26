@@ -1,0 +1,12 @@
+{
+  "name": "ad-growth-console",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A browser-only prototype of a review-first advertising and growth console.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node tests/workflow.test.cjs && node --test tests/storage.test.cjs",
+    "build": "python3 scripts/build.py",
+    "check": "python3 scripts/check_release.py"
+  }
+}
