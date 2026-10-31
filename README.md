@@ -1,77 +1,241 @@
-# Ad Growth Console
+# Ad Growth Console · 广告投放与增长控制台
 
-A dependency-free, static prototype for planning advertising campaigns and reviewing an agent-assisted workflow across Google Ads, Meta, and TikTok.
+把投放需求、素材、人群、落地页、UTM、文案审核、广告搭建与日报放在同一个工作台中管理。
 
-[简体中文](README.zh-CN.md)
+**当前版本：0.7.0 · 本地运行／内部试用阶段**
 
-**This is a local simulation.** It does not connect advertising accounts, read audience lists, generate content with an AI service, upload assets, launch ads, or collect live reports. Identity switches and task ownership demonstrate workflow rules; they are not authentication or access controls.
+[English](README.en.md) · [详细开发与部署说明](docs/DEVELOPMENT.md)
 
-## Run locally
+## 这个项目解决什么问题
 
-From the repository directory:
+运营人员先选择要投放的平台和素材，再由自己的 Codex 生成策略与文案、回填方案。人工确认后，将审核通过的版本交给本人桌面 Codex，在广告平台浏览器中创建暂停广告。创建结果、平台编号与截图回到工作台，启用需要单独确认。
 
-```sh
-python3 -m http.server 8080
+完整流程：
+
+```text
+准备素材／可选人群／落地页
+          ↓
+新建投放方案 → 选择平台 → 新建计划或在已有计划下新增广告组
+          ↓
+个人 Codex 生成策略、标题、文案和 Google 搜索关键词
+          ↓
+确认落地页 → 生成并保存 UTM 链接 → 保存账户与预算等设置
+          ↓
+人工审核当前版本
+          ↓
+桌面 Codex 手动领取任务 → 浏览器创建暂停广告
+          ↓
+核对平台编号、暂停状态与截图 → 回填执行结果
+          ↓
+Google Ads 真实日报 → 人工复盘 → 创建下一版方案
 ```
 
-Open [http://localhost:8080](http://localhost:8080). The interface is primarily Chinese.
+**审核通过、创建暂停广告和启用广告是三个独立步骤。** 修改素材、文案、落地页、UTM 或账户设置后，需要重新审核。日报建议不会自动修改广告或启用计划。
 
-The generated static page runs without third-party packages. Python 3 serves and builds the page; Node.js is needed only for the workflow tests and npm commands. No `npm install` is required.
+## 当前能做什么
 
-## Explore the workflow
+| 模块 | 当前能力与使用范围 |
+| --- | --- |
+| 团队协作 | 邀请成员、管理员／编辑／只读权限、共享方案、版本历史、操作记录和并发修改冲突提示。 |
+| 投放方案 | 可选单个平台或多个平台；支持新计划，或手动登记已有父计划编号后新增广告组。自动同步的计划库仍待开发。 |
+| 素材库 | 登记供应商、达人来源，手动上传图片／视频，记录达人广告代码；已有文件按版本复用。来源链接不会自动下载。 |
+| 人群库 | 可选包含、排除或不使用人群；CSV 可标记历史付费、当前订阅、活跃、活动参与或自定义类型。尚未接数据库拉取或平台人群上传匹配。 |
+| 落地页库 | 手动添加活动页、读取公开 HTTPS Sitemap 更新页面网址、维护标签／语言／目标和说明，按保存的资料推荐落地页。 |
+| 策略与文案 | 本人的 Codex 生成并自动回填可编辑内容，随后交人工审核；手动导入仍可作为备用。 |
+| UTM | 管理员保存团队规则，按方案生成追踪链接并保留版本及唯一 `tracking_code`；业务后台的数据关联尚未接入。 |
+| 广告搭建 | 已实现桌面浏览器任务、本人领取、暂停检查、结果回填及独立启用确认。每个实际平台、账户和界面都需单独验收。 |
+| 投放日报 | Google Ads 账户／计划真实数据、前日比较、8 日费用趋势、转化目标明细、固定规则总结和待人工复核的建议。Meta／TikTok 日报尚未接入。 |
+| 素材存储 | 默认私有本地目录，可配置私有阿里云 OSS；真实 Bucket 由部署者另行配置和验收。 |
 
-1. Create a proposal or choose an existing demo campaign as the parent of a new ad group.
-2. Select asset versions and optionally choose an audience package.
-3. Simulate checking files on the selected execution computer.
-4. Review sample copy, choose landing pages, and save demo tracking links.
-5. Approve the complete proposal version.
-6. Submit and claim a build task; try complete, partial-failure, and unknown-result scenarios.
-7. Review the separate enablement and delivery states, then simulate a reporting day and a new test group.
+当前浏览器任务范围：每份方案选择一份素材，每个平台一个广告组、一条广告。Google 为搜索广告；Meta 为网站销售文件广告；TikTok 为使用关联身份的手动竞价网站转化视频文件广告。纯达人广告代码发布尚未接入。详见[平台范围与暂停检查](docs/PLATFORM-BROWSER.md)。
 
-The six main areas are overview, campaign management, resources, execution, reports, and team settings. Resource libraries include assets, optional audiences, landing pages, and tracking records.
+## 本地启动
 
-## What the prototype demonstrates
+### 1. 准备环境
 
-- Single-platform and multi-platform proposals, with separate account, campaign, group, and ad identifiers.
-- Human review of a fixed version, with re-review after meaningful changes.
-- Task ownership, per-computer asset-cache simulations, partial retries, and reconciliation before repeating an unknown submission.
-- Frozen asset, audience, landing-page, and tracking references in historical execution records.
-- Optional paid, usage, activity, and custom audiences; file selection records metadata only.
-- Local sample reports that keep platform-attributed conversions separate from business registrations and first subscriptions.
+- Node.js **24.15 或更新的 24.x 版本**。
+- pnpm **11.25.0**。
+- 首次安装依赖需要网络，项目目录需要允许写入本地数据。
+- Python 3 用于可选的演示构建、发布检查和授权回调测试。Google 授权助手另需 Python 3.9+ 和 `google-auth-oauthlib`，详见[日报配置](docs/REPORTING.md)。
 
-All names, identifiers, URLs, metrics, and results are examples. Links under `example.com` are placeholders. Copy and page recommendations are deterministic examples, not AI output. File preparation and audience matching do not read file contents or contact a provider.
+### 2. 安装并启动
 
-## State and limitations
-
-State is stored in this browser's `localStorage`, scoped to its origin and profile. Other browsers and computers have independent state. Clearing site data removes the local demo history. If storage fails or reaches its limit, the interface shows a warning rather than claiming the new snapshot was saved.
-
-Real account APIs, email lists, SSO, shared storage, cloud drives, scheduled jobs, and automatic Codex invocation are not integrated. A generated task description can be handed to a human or an agent; opening the page does not start another application. The demo can be explored in an ordinary browser without Codex.
-
-## Build and test
+解压源码包后，在包含 `package.json` 的文件夹中打开终端，运行：
 
 ```sh
-npm run build
-npm test
+pnpm install --frozen-lockfile
+pnpm start
 ```
 
-Equivalent commands:
+浏览器打开：**[http://127.0.0.1:3000](http://127.0.0.1:3000)**。
+
+保持启动服务的终端运行；按 `Ctrl+C` 停止。下次在同一目录执行 `pnpm start`，继续使用原来的本地数据。
+
+### 3. 创建第一个团队
+
+1. 首次启动后，使用文本编辑器打开项目里的 `.local/bootstrap-token` 文件；它是本机生成的初始化口令。
+2. 在网页的「首次管理员初始化」填写口令，自行设置团队名称、姓名、邮箱和至少 12 位的密码。
+3. 创建后登录。以后使用这个账号进入工作台，不需要再次初始化。
+
+初始化口令、密码和邀请链接都应私下保管。网页不会自动读取口令，也不需要把它发给任何人。
+
+新解压的源码包是一个空白工作区。原电脑的账号、方案、素材、日报和第三方授权不随源码分发；迁移旧工作区需要另行备份和恢复。
+
+## 第一份投放方案怎么走
+
+1. **准备资源**：上传本次图片或视频，选填素材备注；按需导入人群，完善落地页分类与说明。
+2. **保存 UTM 规则**：管理员在「UTM设置」确认团队规则，默认示例不会自动成为企业的真实规则。
+3. **填写投放需求**：选择 Google、Meta、TikTok 中的一个或多个平台，填写目标、地区和预算；新增广告组时选单个平台并登记已有父计划编号。
+4. **连接自己的 Codex**：完成下方连接流程，选择本人的在线电脑并生成策略和文案。
+5. **人工检查**：修改标题、正文和 Google 关键词，确认推荐落地页，生成追踪链接；补齐平台账户、预算、转化目标、版位、身份等设置并保存。
+6. **提交审核**：管理员或编辑审核当前版本，可以通过或退回；当前允许审核自己的方案。
+7. **创建暂停广告**：在「广告搭建」提交暂停任务，将页面执行说明交给自己的桌面 Codex 手动领取。创建后核对实际平台编号、截图和暂停状态。
+8. **看日报与复盘**：Google 只读数据配置成功后，在「投放日报」接入允许读取的子账户。建议供人复核，采纳后另建或修改方案并重新审核。
+
+已有计划的账户与父计划编号仍需在真实广告页面核对。结果不明的提交先查清原对象，再决定是否重试，避免重复创建。
+
+## 每个人怎样连接自己的 Codex
+
+先在本人电脑安装兼容的官方 Codex CLI，并使用自己的账号登录。然后：
+
+1. 在网页「我的 Codex」生成一次性连接码。
+2. 另开一个终端，在项目目录运行：
+
+   ```sh
+   node runner/connect.mjs --server "http://127.0.0.1:3000"
+   ```
+
+3. 按终端提示输入连接码，回到网页核对电脑名称并确认保存连接。
+4. 生成文案时保持连接器运行，方案里选择自己的在线电脑。
+
+共享部署后，将命令中的本地地址替换为团队统一的 HTTPS 工作区地址。网页不收集 Codex 密码或个人授权文件。连接器使用本机 CLI 当前登录的账号，连接成功并不验证它的邮箱与工作台账号相同。
+
+**文案生成与浏览器搭建使用不同的执行流程。** 文案可通过连接器自动回填；广告搭建需要有 Computer Use 能力的桌面 Codex 会话，手动领取任务并操作已登录的广告浏览器。网页不会自动打开浏览器或向已有聊天派发任务。
+
+当前生成只依据已保存的素材名称、备注和页面资料，不会自动读取图片像素、视频画面或落地页正文。请补充准确说明，并审核所有产品描述。详见[个人连接说明](docs/CODEX-CONNECTOR.md)与[浏览器执行说明](docs/BROWSER-EXECUTION.md)。
+
+## 同事怎样一起使用
+
+本地地址 `127.0.0.1` 只指向当前电脑。把这个地址发给同事，不会让她访问你的工作区；每人各自解压并启动，也会得到各自独立的数据。
+
+团队共用时，需要将后台部署到一台持续运行的服务器，配置固定 HTTPS 地址、持久数据目录、备份和私有连接设置。大家登录同一个工作区，各自绑定自己的 Codex 和广告浏览器。
+
+| 角色 | 查看团队资源、方案、记录和日报 | 编辑方案、资源及审核 | 邀请成员、管理团队和 UTM 规则 |
+| --- | --- | --- | --- |
+| 管理员 | 可以 | 可以 | 可以 |
+| 编辑 | 可以 | 可以 | 不可以 |
+| 只读 | 可以 | 不可以 | 不可以 |
+
+管理员在「团队设置」为指定邮箱创建邀请并分配角色，私下分享完整邀请链接。同事通过邀请注册或登录后接受邀请。仅有工作区网址不会获得团队数据访问权限。当前没有自动邀请邮件、邮箱验证、密码找回邮件或企业 SSO。
+
+任务只能由发起人的指定连接领取；团队可见记录不代表可以接管他人的广告操作。详见[部署要求](docs/DEVELOPMENT.md)。
+
+## 数据和素材存在哪里
+
+| 内容 | 默认存放位置 |
+| --- | --- |
+| 账号、团队、方案、版本、UTM、审核、执行记录和日报 | `.local/console.sqlite` |
+| 上传的图片和视频 | `.local/uploads/materials/`，或配置后的私有 OSS |
+| 本机开发密钥和初始化口令 | `.local/` 内的私有文件 |
+| 个人 Codex 连接状态、任务回传缓存和素材缓存 | 各成员电脑的私有连接器目录 |
+| 静态演示记录 | 当前浏览器的 `localStorage`，与团队数据库独立 |
+
+`DATA_DIR` 可更改服务端数据目录。备份旧工作区时，需要一起保留数据库、其引用的本地素材及必要私有配置，按 SQLite 一致性备份方式操作；仅有源码不能恢复原数据。
+
+阿里云 OSS 只负责素材对象存储，不会自动部署平台、迁移 SQLite、迁移旧本地素材或创建 Bucket。选择 OSS 后配置不完整会阻止新上传，旧文件仍按原引用读取。[OSS 配置说明](docs/OSS.md)
+
+人群 CSV 导入保留计数与去空格、转小写后的邮箱 SHA256 哈希，不保存原始 CSV 或明文邮箱。哈希仍需私有保管；导入数量不等于广告平台的匹配人数，后续平台接入可能需要重新导入原始文件。
+
+## Google Ads 日报与配置
+
+Google 报表与个人 Codex 是两个独立连接。部署者在服务器配置私有 Google OAuth 文件和允许读取的账户，管理员才可在网页接入账户。配置文件可读取不代表报表已连接，只有全部查询成功后才保存真实日报。
+
+日报按账户时区的完整自然日统计，默认昨天；费用保留原始 micros，转化可以含小数。每次读取 15 天数据，并刷新已有的前 7 日日报以处理回补；页面提供 8 日趋势。来源失败保留上次成功结果，不把缺失数据变为零。
+
+**平台归因转化不等于网站注册、首订或去重付费人数。** 同一汇总可能包含注册、购买、频道订阅等不同目标，应结合转化目标明细判断。总结与迭代建议当前按固定规则生成，供人工复核，不执行广告修改。
+
+默认每天账户时区 10:00 更新，可在页面调整；服务停止或电脑休眠时不会继续执行。OAuth 测试授权、网络通路、目标账户权限需要按实际部署维护，详见[日报连接、授权恢复和指标说明](docs/REPORTING.md)。
+
+私有环境文件需显式加载：
 
 ```sh
-python3 scripts/build.py
-node tests/workflow.test.cjs
-node --test tests/storage.test.cjs
+node --env-file=.env server/index.mjs
 ```
 
-The tests exercise local state transitions, event handling, and browser-storage behavior. They do not validate real provider access, advertising performance, or production security. Check the UI in a browser after changing layout or rendering behavior. `npm run check` runs the public-release file checks.
+可用名称见 [`.env.example`](.env.example)。真实密钥、代理地址和授权文件放在私有运行配置中。
 
-## Documentation
+## 正式工作台与静态演示的区别
 
-- [Architecture and workflow boundaries](docs/ARCHITECTURE.md)
-- [Demo tracking rules](docs/TRACKING.md)
-- [Security and responsible disclosure](SECURITY.md)
+| 入口 | 用途 | 数据与执行 |
+| --- | --- | --- |
+| `http://127.0.0.1:3000` | 团队工作台 | 需要 Node 服务、真实登录与服务端保存；连接配置后可读真实数据或执行已审核任务。 |
+| `http://127.0.0.1:3000/demo` | 独立流程演示 | 示例数据、浏览器本地保存，身份切换不构成登录，不会真实投放。 |
+| `dist/` | 构建后的静态演示文件 | 由 `pnpm run build` 生成，不包含团队后台。 |
 
-Before contributing, use synthetic fixtures and placeholder URLs. Keep credentials, customer data, personal audience data, internal documents, and browser-state exports out of commits and issues.
+完整工作台不能通过双击 HTML 或仅托管 `dist/` 来运行。
 
-## License
+## 开发、检查与目录
 
-[MIT](LICENSE). Advertising-platform names identify the workflow being demonstrated; this project is not affiliated with those platforms.
+```sh
+pnpm dev          # 开发时自动重启服务
+pnpm test         # 流程、服务端、连接器、存储和日报测试
+pnpm run check    # 公开文件范围与基础敏感内容检查
+pnpm run build    # 仅构建静态演示
+```
+
+自动化测试使用虚构账户、指标和截图，验证应用流程；实际广告权限、平台界面、OSS 和服务器部署需另行验收。真实验收资料保留在私有运行目录中，不随源码发布。
+
+```text
+workspace/     团队工作台网页
+server/        登录、团队、资源、方案、UTM、任务、存储和日报服务
+runner/        个人 Codex 连接器、浏览器任务桥接和素材缓存
+src/           独立静态演示
+scripts/       构建、发布检查与 Google 授权助手
+tests/         自动化测试
+docs/          详细使用、架构和部署文档
+.env.example   可填写的配置名称示例
+```
+
+当前数据库适用于单个服务实例与持久数据目录；多实例共享部署需先迁移到共享数据库，不能让多个独立 SQLite 文件充当同一个工作区。
+
+## 常见问题
+
+**下载源码后为什么没有原来的账号、方案和日报？**
+
+源码包提供程序，首次启动创建空白工作区。旧数据仍在原服务的数据目录，需要单独迁移。
+
+**网页显示 Codex 在线，为什么没有自动搭建广告？**
+
+在线状态供文案生成任务使用。浏览器搭建还需要本人桌面 Codex 领取已审核任务、完成平台预检并核对暂停开关。
+
+**素材是不是每次都重新下载？**
+
+上传后保留文件版本。桌面执行按已审核的具体版本校验并缓存素材，命中有效缓存时复用；供应商文档来源仍需人工取得文件。
+
+**Sitemap 更新是不是自动读懂所有落地页？**
+
+目前只导入公开网址。需要补充标签、语言、目标和页面说明；Sitemap 索引先检查并选择子地图，再更新。
+
+**打开网页后没有 Google 数据怎么办？**
+
+先由部署者配置只读数据连接，再接入允许读取的子账户。页面会区分尚未配置、授权失效和读取失败；没有成功日报时不显示示例数字。
+
+**端口 3000 被占用怎么办？**
+
+停止占用它的旧实例，或同时调整 `PORT`、`APP_URL` 及访问地址，再用显式环境文件启动。不要只修改浏览器地址。
+
+## 详细文档
+
+- [架构与模块边界](docs/ARCHITECTURE.md)
+- [开发、初始化、备份与部署](docs/DEVELOPMENT.md)
+- [个人 Codex 连接](docs/CODEX-CONNECTOR.md)
+- [浏览器执行、素材缓存与恢复](docs/BROWSER-EXECUTION.md)
+- [平台广告范围与暂停检查](docs/PLATFORM-BROWSER.md)
+- [Google 日报与授权](docs/REPORTING.md)
+- [阿里云 OSS](docs/OSS.md)
+- [演示版追踪规则](docs/TRACKING.md)
+- [安全与问题报告](SECURITY.md)
+
+## 许可证
+
+[MIT](LICENSE)。平台名称用于说明集成范围，本项目与相应广告平台没有隶属关系。

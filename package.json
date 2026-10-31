@@ -1,12 +1,30 @@
 {
   "name": "ad-growth-console",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
-  "description": "A browser-only prototype of a review-first advertising and growth console.",
+  "description": "A team workspace for advertising proposals, with a separate simulated workflow demo.",
   "license": "MIT",
   "scripts": {
-    "test": "node tests/workflow.test.cjs && node --test tests/storage.test.cjs",
+    "test": "node tests/workflow.test.cjs && node --test tests/*.test.mjs tests/storage.test.cjs",
     "build": "python3 scripts/build.py",
-    "check": "python3 scripts/check_release.py"
+    "check": "python3 scripts/check_release.py",
+    "start": "node server/index.mjs",
+    "dev": "node --watch server/index.mjs",
+    "test:team": "node --test tests/team.test.mjs",
+    "test:planning": "node --test tests/resources.test.mjs tests/planning.test.mjs",
+    "connector": "node runner/connect.mjs",
+    "test:connectors": "node --test tests/connectors.test.mjs tests/runner.test.mjs",
+    "browser:task": "node runner/browser-client.mjs",
+    "test:execution": "node --test tests/execution.test.mjs tests/browser-client.test.mjs",
+    "test:reporting": "node --test tests/google-ads-reader.test.mjs tests/google-authorization.test.mjs tests/reporting.test.mjs tests/reporting-http.test.mjs tests/reporting-ui.test.mjs"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "dependencies": {
+    "ali-oss": "6.23.0",
+    "better-auth": "1.7.14"
   }
 }
